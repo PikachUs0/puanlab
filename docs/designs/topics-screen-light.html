@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="tr"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_tab" name="shell-type"/><title>Konular - PuanLab</title><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { colors: { "surface-container-high": "#e1e8ff", "outline-variant": "#c4c5d8", "tertiary-fixed": "#7ffc97", "tertiary": "#005e26", "on-secondary-fixed-variant": "#3a485b", "on-surface": "#0f1b34", "surface-container-highest": "#d8e2ff", "error": "#ba1a1a", "surface-variant": "#d8e2ff", "inverse-surface": "#24304a", "on-primary": "#ffffff", "secondary-fixed-dim": "#b9c7df", "secondary-container": "#d5e3fc", "background": "#faf9ff", "on-tertiary-fixed": "#002109", "on-tertiary-fixed-variant": "#005320", "on-surface-variant": "#434655", "on-primary-fixed": "#001452", "tertiary-fixed-dim": "#62df7d", "inverse-on-surface": "#edf0ff", "tertiary-container": "#007933", "on-secondary": "#ffffff", "error-container": "#ffdad6", "on-tertiary-container": "#98ffa7", "surface-container": "#e9edff", "primary-fixed-dim": "#b7c4ff", "surface-tint": "#1f4fdf", "on-primary-container": "#e5e8ff", "surface-container-lowest": "#ffffff", "secondary": "#515f74", "on-tertiary": "#ffffff", "surface": "#faf9ff", "surface-bright": "#faf9ff", "on-secondary-container": "#57657a", "outline": "#747686", "on-background": "#0f1b34", "on-error-container": "#93000a", "on-primary-fixed-variant": "#0038b7", "primary-container": "#2f5bea", "secondary-fixed": "#d5e3fc", "inverse-primary": "#b7c4ff", "surface-dim": "#cedafb", "on-secondary-fixed": "#0d1c2e", "primary": "#0040cf", "on-error": "#ffffff", "surface-container-low": "#f1f3ff", "primary-fixed": "#dde1ff" }, borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, spacing: { "space-xl": "1.5rem", "gutter": "1rem", "space-sm": "0.5rem", "margin": "1rem", "space-md": "1rem", "space-lg": "1.25rem", "space-xs": "0.25rem" }, fontFamily: { "label-sm": ["Plus Jakarta Sans"], "label-lg": ["Plus Jakarta Sans"], "display-lg": ["Plus Jakarta Sans"], "title-md": ["Plus Jakarta Sans"], "headline-md": ["Plus Jakarta Sans"], "body-lg": ["Plus Jakarta Sans"], "numeric-metric": ["Plus Jakarta Sans"], "title-lg": ["Plus Jakarta Sans"], "body-md": ["Plus Jakarta Sans"] }, fontSize: { "label-sm": ["12px", { lineHeight: "16px", letterSpacing: "0.02em", fontWeight: "500" }], "label-lg": ["14px", { lineHeight: "20px", letterSpacing: "0.01em", fontWeight: "500" }], "display-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "600" }], "title-md": ["16px", { lineHeight: "24px", letterSpacing: "0em", fontWeight: "600" }], "headline-md": ["24px", { lineHeight: "32px", letterSpacing: "-0.015em", fontWeight: "600" }], "body-lg": ["16px", { lineHeight: "24px", letterSpacing: "0em", fontWeight: "400" }], "numeric-metric": ["22px", { lineHeight: "28px", letterSpacing: "-0.02em", fontWeight: "600" }], "title-lg": ["20px", { lineHeight: "28px", letterSpacing: "-0.01em", fontWeight: "500" }], "body-md": ["14px", { lineHeight: "20px", letterSpacing: "0.01em", fontWeight: "400" }] } } } }</script><style>@layer base{html,body{width:100%;margin:0;padding:0;min-height:100%;background-color:#faf9ff;}body{overscroll-behavior-y:none;-webkit-tap-highlight-color:transparent;}.pb-safe{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 5rem);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface font-body-md text-on-surface antialiased flex flex-col min-h-screen"><header class="fixed top-0 w-full z-50 bg-surface/85 backdrop-blur-xl shadow-[0_1px_8px_rgba(15,27,52,0.04)] pt-safe"><div class="h-16 px-margin flex items-center justify-between"><div class="flex items-center gap-space-sm"><div class="w-2.5 h-2.5 rounded-full bg-primary-container"></div><span class="font-title-lg text-title-lg tracking-tight text-on-surface font-semibold">PuanLab</span></div><div class="flex items-center gap-space-xs"><a class="w-11 h-11 flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors rounded-full" data-path="ayarlar" href="#"><span class="material-symbols-outlined text-[22px]">settings</span></a><a class="w-11 h-11 flex items-center justify-center" data-path="profil" href="#"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></a></div></div></header><main class="flex-1 flex flex-col relative w-full pt-16 pb-safe bg-surface"><div class="flex flex-col w-full">
+<!-- Interactive Script for Filtering & Topic State Toggle Modal -->
+<script>
+    function switchExamTab(exam) {
+      const tytBtn = document.getElementById('tab-btn-tyt');
+      const aytBtn = document.getElementById('tab-btn-ayt');
+      if (exam === 'TYT') {
+        tytBtn.className = 'flex-1 py-space-xs text-center rounded-full font-label-lg text-label-lg transition-all bg-primary-container text-on-primary shadow-sm';
+        aytBtn.className = 'flex-1 py-space-xs text-center rounded-full font-label-lg text-label-lg transition-all text-secondary hover:text-on-surface';
+      } else {
+        aytBtn.className = 'flex-1 py-space-xs text-center rounded-full font-label-lg text-label-lg transition-all bg-primary-container text-on-primary shadow-sm';
+        tytBtn.className = 'flex-1 py-space-xs text-center rounded-full font-label-lg text-label-lg transition-all text-secondary hover:text-on-surface';
+      }
+    }
+
+    let activeTopicEl = null;
+
+    function openStatusModal(buttonEl, topicTitle) {
+      activeTopicEl = buttonEl;
+      const modal = document.getElementById('status-modal');
+      const titleSpan = document.getElementById('modal-topic-name');
+      titleSpan.innerText = topicTitle;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeStatusModal() {
+      const modal = document.getElementById('status-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    const statusStyleMap = {
+      'Başlamadım': 'bg-surface-container-high text-secondary',
+      'Öğreniyorum': 'bg-primary-fixed text-primary',
+      'Pratik': 'bg-secondary-container text-on-secondary-container',
+      'Tekrar': 'bg-surface-variant text-on-surface-variant',
+      'Güçlü': 'bg-tertiary-fixed text-on-tertiary-fixed'
+    };
+
+    function updateTopicStatus(newStatus) {
+      if (activeTopicEl) {
+        activeTopicEl.textContent = newStatus;
+        activeTopicEl.className = 'font-label-sm text-label-sm px-space-sm py-1 rounded-lg transition-colors flex items-center gap-1 ' + statusStyleMap[newStatus];
+      }
+      closeStatusModal();
+    }
+
+    function toggleSection(sectionId) {
+      const section = document.getElementById(sectionId);
+      const icon = document.getElementById(sectionId + '-icon');
+      if (section.classList.contains('hidden')) {
+        section.classList.remove('hidden');
+        icon.classList.add('rotate-180');
+      } else {
+        section.classList.add('hidden');
+        icon.classList.remove('rotate-180');
+      }
+    }
+
+    function filterTopics(query) {
+      const clean = query.toLowerCase().trim();
+      const topicRows = document.querySelectorAll('.topic-item-row');
+      topicRows.forEach(row => {
+        const name = row.getAttribute('data-topic-name').toLowerCase();
+        if (name.includes(clean)) {
+          row.style.display = 'flex';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+    }
+  </script>
+<!-- Sticky Academic Filter Header -->
+<div class="px-margin pt-space-md pb-space-sm bg-surface">
+<!-- Calm Headline & Editorial Context -->
+<div class="mb-space-md">
+<h1 class="font-headline-md text-headline-md text-on-surface tracking-tight">Müfredat Takibi</h1>
+<p class="font-body-md text-body-md text-secondary mt-1">Öğrenme derinliğinize göre çalışma planınızı sakin bir ritimle yapılandırın.</p>
+</div>
+<!-- Exam Segmented Tabs -->
+<div class="w-full bg-surface-container-low p-1 rounded-full flex items-center mb-space-md">
+<button class="flex-1 py-space-xs text-center rounded-full font-label-lg text-label-lg transition-all bg-primary-container text-on-primary shadow-sm" id="tab-btn-tyt" onclick="switchExamTab('TYT')">
+        TYT
+      </button>
+<button class="flex-1 py-space-xs text-center rounded-full font-label-lg text-label-lg transition-all text-secondary hover:text-on-surface" id="tab-btn-ayt" onclick="switchExamTab('AYT')">
+        AYT
+      </button>
+</div>
+<!-- Minimal Search Bar -->
+<div class="relative w-full mb-space-sm">
+<div class="absolute inset-y-0 left-0 pl-space-md flex items-center pointer-events-none text-secondary">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</div>
+<input class="w-full h-12 pl-11 pr-space-md bg-surface-container-lowest text-on-surface font-body-md text-body-md placeholder:text-outline rounded-full shadow-sm focus:outline-none focus:bg-surface-container-low transition-colors" oninput="filterTopics(this.value)" placeholder="Konularda ara..." type="text"/>
+</div>
+</div>
+<!-- Subject Lists Stack -->
+<div class="px-margin flex flex-col gap-space-md pb-space-xl">
+<!-- 1. Matematik -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">
+<!-- Section Header -->
+<button class="w-full px-space-md py-space-md flex items-center justify-between text-left hover:bg-surface-container-low transition-colors" onclick="toggleSection('section-matematik')" type="button">
+<div class="flex items-center gap-space-sm">
+<div class="w-2 h-2 rounded-full bg-primary"></div>
+<span class="font-title-md text-title-md text-on-surface">Matematik</span>
+<span class="font-label-sm text-label-sm text-secondary bg-surface-container px-2 py-0.5 rounded-full">3 Konu</span>
+</div>
+<span class="material-symbols-outlined text-secondary transition-transform duration-200" id="section-matematik-icon">expand_more</span>
+</button>
+<!-- Topic Items -->
+<div class="flex flex-col px-space-md pb-space-sm" id="section-matematik">
+<!-- Topic: Fonksiyonlar -->
+<div class="topic-item-row flex items-center justify-between py-space-sm" data-topic-name="Fonksiyonlar">
+<div class="min-w-0 pr-space-sm">
+<p class="font-body-md text-body-md text-on-surface truncate">Fonksiyonlar</p>
+<p class="font-label-sm text-label-sm text-secondary">Son çalışma: Dün</p>
+</div>
+<button class="font-label-sm text-label-sm px-space-sm py-1 rounded-lg transition-colors flex items-center gap-1 bg-primary-fixed text-primary" onclick="openStatusModal(this, 'Fonksiyonlar')" type="button">
+            Öğreniyorum
+          </button>
+</div>
+<!-- Topic: Polinomlar -->
+<div class="topic-item-row flex items-center justify-between py-space-sm" data-topic-name="Polinomlar">
+<div class="min-w-0 pr-space-sm">
+<p class="font-body-md text-body-md text-on-surface truncate">Polinomlar</p>
+<p class="font-label-sm text-label-sm text-secondary">Son çalışma: 3 gün önce</p>
+</div>
+<button class="font-label-sm text-label-sm px-space-sm py-1 rounded-lg transition-colors flex items-center gap-1 bg-secondary-container text-on-secondary-container" onclick="openStatusModal(this, 'Polinomlar')" type="button">
+            Pratik
+          </button>
+</div>
+<!-- Topic: İkinci Dereceden Denklemler -->
+<div class="topic-item-row flex items-center justify-between py-space-sm" data-topic-name="İkinci Dereceden Denklemler">
+<div class="min-w-0 pr-space-sm">
+<p class="font-body-md text-body-md text-on-surface truncate">İkinci Dereceden Denklemler</p>
+<p class="font-label-sm text-label-sm text-outline">Henüz başlanmadı</p>
+</div>
+<button class="font-label-sm text-label-sm px-space-sm py-1 rounded-lg transition-colors flex items-center gap-1 bg-surface-container-high text-secondary" onclick="openStatusModal(this, 'İkinci Dereceden Denklemler')" type="button">
+            Başlamadım
+          </button>
+</div>
+</div>
+</div>
+<!-- 2. Geometri -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">
+<!-- Section Header -->
+<button class="w-full px-space-md py-space-md flex items-center justify-between text-left hover:bg-surface-container-low transition-colors" onclick="toggleSection('section-geometri')" type="button">
+<div class="flex items-center gap-space-sm">
+<div class="w-2 h-2 rounded-full bg-primary-fixed-dim"></div>
+<span class="font-title-md text-title-md text-on-surface">Geometri</span>
+<span class="font-label-sm text-label-sm text-secondary bg-surface-container px-2 py-0.5 rounded-full">2 Konu</span>
+</div>
+<span class="material-symbols-outlined text-secondary transition-transform duration-200" id="section-geometri-icon">expand_more</span>
+</button>
+<!-- Topic Items -->
+<div class="flex flex-col px-space-md pb-space-sm" id="section-geometri">
+<!-- Topic: Üçgende Açılar -->
+<div class="topic-item-row flex items-center justify-between py-space-sm" data-topic-name="Üçgende Açılar">
+<div class="min-w-0 pr-space-sm">
+<p class="font-body-md text-body-md text-on-surface truncate">Üçgende Açılar</p>
+<p class="font-label-sm text-label-sm text-secondary">Son çalışma: 1 hafta önce</p>
+</div>
+<button class="font-label-sm text-label-sm px-space-sm py-1 rounded-lg transition-colors flex items-center gap-1 bg-tertiary-fixed text-on-tertiary-fixed" onclick="openStatusModal(this, 'Üçgende Açılar')" type="button">
+            Güçlü
+          </button>
+</div>
+<!-- Topic: Çokgenler -->
+<div class="topic-item-row flex items-center justify-between py-space-sm" data-topic-name="Çokgenler">
+<div class="min-w-0 pr-space-sm">
+<p class="font-body-md text-body-md text-on-surface truncate">Çokgenler</p>
+<p class="font-label-sm text-label-sm text-secondary">Son çalışma: 4 gün önce</p>
+</div>
+<button class="font-label-sm text-label-sm px-space-sm py-1 rounded-lg transition-colors flex items-center gap-1 bg-surface-variant text-on-surface-variant" onclick="openStatusModal(this, 'Çokgenler')" type="button">
+            Tekrar
+          </button>
+</div>
+</div>
+</div>
+<!-- 3. Türkçe -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">
+<!-- Section Header -->
+<button class="w-full px-space-md py-space-md flex items-center justify-between text-left hover:bg-surface-container-low transition-colors" onclick="toggleSection('section-turkce')" type="button">
+<div class="flex items-center gap-space-sm">
+<div class="w-2 h-2 rounded-full bg-secondary"></div>
+<span class="font-title-md text-title-md text-on-surface">Türkçe</span>
+<span class="font-label-sm text-label-sm text-secondary bg-surface-container px-2 py-0.5 rounded-full">3 Konu</span>
+</div>
+<span class="material-symbols-outlined text-secondary transition-transform duration-200" id="section-turkce-icon">expand_more</span>
+</button>
+<!-- Topic Items -->
+<div class="flex flex-col px-space-md pb-space-sm" id="section-turkce">
+<!-- Topic: Paragrafta Anlam -->
+<div class="topic-item-row flex items-center justify-between py-space-sm" data-topic-name="Paragrafta Anlam">
+<div class="min-w-0 pr-space-sm">
+<p class="font-body-md text-body-md text-on-surface truncate">Paragrafta Anlam</p>
+<p class="font-label-sm text-label-sm text-secondary">Son çalışma: Bugün</p>
+</div>
+<button class="font-label-sm text-label-sm px-space-sm py-1 rounded-lg transition-colors flex items-center gap-1 bg-tertiary-fixed text-on-tertiary-fixed" onclick="openStatusModal(this, 'Paragrafta Anlam')" type="button">
+            Güçlü
+          </button>
+</div>
+<!-- Topic: Sözcükte Anlam -->
+<div class="topic-item-row flex items-center justify-between py-space-sm" data-topic-name="Sözcükte Anlam">
+<div class="min-w-0 pr-space-sm">
+<p class="font-body-md text-body-md text-on-surface truncate">Sözcükte Anlam</p>
+<p class="font-label-sm text-label-sm text-secondary">Son çalışma: 2 gün önce</p>
+</div>
+<button class="font-label-sm text-label-sm px-space-sm py-1 rounded-lg transition-colors flex items-center gap-1 bg-secondary-container text-on-secondary-container" onclick="openStatusModal(this, 'Sözcükte Anlam')" type="button">
+            Pratik
+          </button>
+</div>
+<!-- Topic: Cümle Bilgisi -->
+<div class="topic-item-row flex items-center justify-between py-space-sm" data-topic-name="Cümle Bilgisi">
+<div class="min-w-0 pr-space-sm">
+<p class="font-body-md text-body-md text-on-surface truncate">Cümle Bilgisi</p>
+<p class="font-label-sm text-label-sm text-secondary">Son çalışma: 5 gün önce</p>
+</div>
+<button class="font-label-sm text-label-sm px-space-sm py-1 rounded-lg transition-colors flex items-center gap-1 bg-primary-fixed text-primary" onclick="openStatusModal(this, 'Cümle Bilgisi')" type="button">
+            Öğreniyorum
+          </button>
+</div>
+</div>
+</div>
+<!-- 4. Fizik -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">
+<!-- Section Header -->
+<button class="w-full px-space-md py-space-md flex items-center justify-between text-left hover:bg-surface-container-low transition-colors" onclick="toggleSection('section-fizik')" type="button">
+<div class="flex items-center gap-space-sm">
+<div class="w-2 h-2 rounded-full bg-primary-container"></div>
+<span class="font-title-md text-title-md text-on-surface">Fizik</span>
+<span class="font-label-sm text-label-sm text-secondary bg-surface-container px-2 py-0.5 rounded-full">2 Konu</span>
+</div>
+<span class="material-symbols-outlined text-secondary transition-transform duration-200" id="section-fizik-icon">expand_more</span>
+</button>
+<!-- Topic Items -->
+<div class="flex flex-col px-space-md pb-space-sm" id="section-fizik">
+<!-- Topic: Hareket ve Kuvvet -->
+<div class="topic-item-row flex items-center justify-between py-space-sm" data-topic-name="Hareket ve Kuvvet">
+<div class="min-w-0 pr-space-sm">
+<p class="font-body-md text-body-md text-on-surface truncate">Hareket ve Kuvvet</p>
+<p class="font-label-sm text-label-sm text-secondary">Son çalışma: Dün</p>
+</div>
+<button class="font-label-sm text-label-sm px-space-sm py-1 rounded-lg transition-colors flex items-center gap-1 bg-primary-fixed text-primary" onclick="openStatusModal(this, 'Hareket ve Kuvvet')" type="button">
+            Öğreniyorum
+          </button>
+</div>
+<!-- Topic: Vektörler -->
+<div class="topic-item-row flex items-center justify-between py-space-sm" data-topic-name="Vektörler">
+<div class="min-w-0 pr-space-sm">
+<p class="font-body-md text-body-md text-on-surface truncate">Vektörler</p>
+<p class="font-label-sm text-label-sm text-secondary">Son çalışma: 2 hafta önce</p>
+</div>
+<button class="font-label-sm text-label-sm px-space-sm py-1 rounded-lg transition-colors flex items-center gap-1 bg-tertiary-fixed text-on-tertiary-fixed" onclick="openStatusModal(this, 'Vektörler')" type="button">
+            Güçlü
+          </button>
+</div>
+</div>
+</div>
+<!-- Quiet Study Room Aesthetic Note / Minimal Helper -->
+<div class="bg-surface-container-low rounded-xl p-space-md text-center">
+<p class="font-label-sm text-label-sm text-secondary">Konu yeterlilik durumunuzu güncel tutarak denemelerdeki konu dağılımlarını daha berrak değerlendirebilirsiniz.</p>
+</div>
+</div>
+<!-- Academic Topic Status Change Bottom Sheet Modal -->
+<div class="fixed inset-0 z-50 hidden bg-on-surface/40 backdrop-blur-sm items-end justify-center" id="status-modal">
+<div class="w-full max-w-md bg-surface-container-lowest rounded-t-xl p-space-lg shadow-xl flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div>
+<span class="font-label-sm text-label-sm text-secondary uppercase tracking-wider">Durum Güncelle</span>
+<h2 class="font-title-md text-title-md text-on-surface truncate" id="modal-topic-name">Konu</h2>
+</div>
+<button class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-secondary hover:text-on-surface" onclick="closeStatusModal()" type="button">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+<div class="flex flex-col gap-space-xs mt-space-xs">
+<button class="w-full py-space-sm px-space-md rounded-lg text-left flex items-center justify-between hover:bg-surface-container-low transition-colors" onclick="updateTopicStatus('Başlamadım')" type="button">
+<div class="flex items-center gap-space-sm">
+<span class="w-2.5 h-2.5 rounded-full bg-outline-variant"></span>
+<span class="font-body-md text-body-md text-on-surface">Başlamadım</span>
+</div>
+<span class="font-label-sm text-label-sm text-secondary">Planlanmadı</span>
+</button>
+<button class="w-full py-space-sm px-space-md rounded-lg text-left flex items-center justify-between hover:bg-surface-container-low transition-colors" onclick="updateTopicStatus('Öğreniyorum')" type="button">
+<div class="flex items-center gap-space-sm">
+<span class="w-2.5 h-2.5 rounded-full bg-primary"></span>
+<span class="font-body-md text-body-md text-on-surface">Öğreniyorum</span>
+</div>
+<span class="font-label-sm text-label-sm text-secondary">Konu Anlatımı</span>
+</button>
+<button class="w-full py-space-sm px-space-md rounded-lg text-left flex items-center justify-between hover:bg-surface-container-low transition-colors" onclick="updateTopicStatus('Pratik')" type="button">
+<div class="flex items-center gap-space-sm">
+<span class="w-2.5 h-2.5 rounded-full bg-secondary-fixed-dim"></span>
+<span class="font-body-md text-body-md text-on-surface">Pratik</span>
+</div>
+<span class="font-label-sm text-label-sm text-secondary">Soru Çözümü</span>
+</button>
+<button class="w-full py-space-sm px-space-md rounded-lg text-left flex items-center justify-between hover:bg-surface-container-low transition-colors" onclick="updateTopicStatus('Tekrar')" type="button">
+<div class="flex items-center gap-space-sm">
+<span class="w-2.5 h-2.5 rounded-full bg-outline"></span>
+<span class="font-body-md text-body-md text-on-surface">Tekrar</span>
+</div>
+<span class="font-label-sm text-label-sm text-secondary">Gözden Geçirme</span>
+</button>
+<button class="w-full py-space-sm px-space-md rounded-lg text-left flex items-center justify-between hover:bg-surface-container-low transition-colors" onclick="updateTopicStatus('Güçlü')" type="button">
+<div class="flex items-center gap-space-sm">
+<span class="w-2.5 h-2.5 rounded-full bg-tertiary"></span>
+<span class="font-body-md text-body-md text-on-surface">Güçlü</span>
+</div>
+<span class="font-label-sm text-label-sm text-secondary">Kavrandı</span>
+</button>
+</div>
+</div>
+</div>
+</div></main><nav class="fixed bottom-0 w-full z-50 bg-surface/90 backdrop-blur-xl shadow-[0_-2px_12px_rgba(15,27,52,0.05)]" data-active-classes="text-primary-container [&amp;_span.indicator]:bg-secondary-container [&amp;_span.indicator]:text-primary-container [&amp;_span.tab-label]:font-semibold"><div class="flex items-center justify-around h-20 px-space-sm pb-[env(safe-area-inset-bottom,0px)]"><a class="flex flex-col items-center justify-center gap-1 min-w-[72px] h-14 text-on-surface-variant transition-colors group" data-path="ana-sayfa" href="#"><span class="indicator flex items-center justify-center w-14 h-8 rounded-full transition-colors"><span class="material-symbols-outlined text-[22px]">home</span></span><span class="tab-label font-label-sm text-label-sm tracking-tight">Ana Sayfa</span></a><a aria-current="page" class="flex flex-col items-center justify-center gap-1 min-w-[72px] h-14 transition-colors group text-primary-container [&amp;_span.indicator]:bg-secondary-container [&amp;_span.indicator]:text-primary-container [&amp;_span.tab-label]:font-semibold" data-path="konular" href="#"><span class="indicator flex items-center justify-center w-14 h-8 rounded-full transition-colors"><span class="material-symbols-outlined text-[22px]">menu_book</span></span><span class="tab-label font-label-sm text-label-sm tracking-tight">Konular</span></a><a class="flex flex-col items-center justify-center gap-1 min-w-[72px] h-14 text-on-surface-variant transition-colors group" data-path="denemeler" href="#"><span class="indicator flex items-center justify-center w-14 h-8 rounded-full transition-colors"><span class="material-symbols-outlined text-[22px]">assignment</span></span><span class="tab-label font-label-sm text-label-sm tracking-tight">Denemeler</span></a></div></nav></body></html>
