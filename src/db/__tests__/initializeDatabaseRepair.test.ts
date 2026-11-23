@@ -131,7 +131,7 @@ describe('initializeDatabase startup repair', () => {
     );
   });
 
-  it('migrates a v5 database to v6 and preserves its rows', async () => {
+  it('migrates a v5 database to the current version and preserves its rows', async () => {
     seedExistingData();
     adapter.db.exec('PRAGMA user_version = 5;');
 
@@ -145,12 +145,13 @@ describe('initializeDatabase startup repair', () => {
     expect(await adapter.getAllAsync('SELECT * FROM practice_exam_results;')).toHaveLength(1);
   });
 
-  it('repairs a v6 database whose app_settings table is missing, without deleting data', async () => {
+  it('repairs a current-version database whose app_settings table is missing, without deleting data', async () => {
     seedExistingData();
-    // `PRAGMA user_version` is only a claim: this database reports 6 while the
-    // settings table this version owns never made it to disk. Startup must
-    // rebuild the table in place instead of throwing on the schema assert.
-    adapter.db.exec('PRAGMA user_version = 6;');
+    // `PRAGMA user_version` is only a claim: this database reports the current
+    // version while the settings table this version owns never made it to disk.
+    // Startup must rebuild the table in place instead of throwing on the
+    // schema assert.
+    adapter.db.exec(`PRAGMA user_version = ${SCHEMA_VERSION};`);
     expect(adapter.tables()).not.toContain('app_settings');
 
     const profileBefore = await adapter.getAllAsync('SELECT * FROM user_profile;');
@@ -170,7 +171,7 @@ describe('initializeDatabase startup repair', () => {
     expect(await adapter.getAllAsync('SELECT * FROM practice_exams;')).toEqual(examsBefore);
   });
 
-  it('repairs a v6 database whose app_settings has the wrong shape, archiving the old table', async () => {
+  it('repairs a current-version database whose app_settings has the wrong shape, archiving the old table', async () => {
     seedExistingData();
     // Missing `updated_at`: the physical shape, not the version, decides.
     adapter.db.exec(
@@ -179,7 +180,7 @@ describe('initializeDatabase startup repair', () => {
     adapter.db.exec(
       `INSERT INTO app_settings (key, value) VALUES ('theme_preference', 'dark');`,
     );
-    adapter.db.exec('PRAGMA user_version = 6;');
+    adapter.db.exec(`PRAGMA user_version = ${SCHEMA_VERSION};`);
 
     const profileBefore = await adapter.getAllAsync('SELECT * FROM user_profile;');
 
@@ -197,7 +198,7 @@ describe('initializeDatabase startup repair', () => {
     expect(await adapter.getAllAsync('SELECT * FROM user_profile;')).toEqual(profileBefore);
   });
 
-  it('leaves a complete v6 database and its stored theme preference untouched', async () => {
+  it('leaves a complete v6 database intact and adds the study_events table', async () => {
     seedExistingData();
     adapter.db.exec(CREATE_APP_SETTINGS_TABLE);
     adapter.db.exec(
@@ -208,7 +209,7 @@ describe('initializeDatabase startup repair', () => {
 
     await loadInitializeDatabase()();
 
-    expect(adapter.tables()).toEqual(tablesBefore);
+    expect(adapter.tables()).toEqual(expect.arrayContaining([...tablesBefore, 'study_events']));
     expect(await adapter.getAllAsync('SELECT value FROM app_settings;')).toEqual([
       { value: 'dark' },
     ]);
@@ -217,7 +218,7 @@ describe('initializeDatabase startup repair', () => {
 
   it('is idempotent: a repaired database survives a second startup without archival churn', async () => {
     seedExistingData();
-    adapter.db.exec('PRAGMA user_version = 6;');
+    adapter.db.exec(`PRAGMA user_version = ${SCHEMA_VERSION};`);
 
     await loadInitializeDatabase()();
     const tablesAfterFirstRun = adapter.tables();
@@ -230,7 +231,7 @@ describe('initializeDatabase startup repair', () => {
 
   it('makes both repositories usable once the repair has run, reading the preserved rows', async () => {
     seedExistingData();
-    adapter.db.exec('PRAGMA user_version = 6;');
+    adapter.db.exec(`PRAGMA user_version = ${SCHEMA_VERSION};`);
 
     // A repository built before readiness would read against a table that does
     // not exist yet; after the repair the same connection serves both reads.

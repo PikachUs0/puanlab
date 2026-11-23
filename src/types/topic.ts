@@ -13,3 +13,22 @@ export type TopicProgress = {
   lastStudiedAt: string | null;
   updatedAt: string;
 };
+
+export type StudyEventType = 'studied' | 'status_changed';
+
+/**
+ * Canonical, append-only study history entry for MVP 0.2.
+ * `occurredAt` is when the event happened, `createdAt` when it was persisted;
+ * both are ISO 8601 strings. Status fields are null for `studied` events and
+ * set for `status_changed` events. Validation happens at the repository
+ * boundary, not in the migration.
+ */
+export type StudyEvent = {
+  id: string;
+  topicId: string;
+  eventType: StudyEventType;
+  occurredAt: string;
+  previousStatus: TopicStatus | null;
+  newStatus: TopicStatus | null;
+  createdAt: string;
+};

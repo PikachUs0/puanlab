@@ -3,7 +3,9 @@ import * as SQLite from 'expo-sqlite';
 import {
   assertAppSettingsSchemaReady,
   assertExamSchemaReady,
+  assertStudyEventsSchemaReady,
   ensureAppSettingsSchema,
+  ensureStudyEventsSchema,
   reconcileExamSchema,
 } from './migrations';
 import {
@@ -95,6 +97,13 @@ async function migrateDatabase(db: SQLite.SQLiteDatabase, fromVersion: number): 
       await ensureAppSettingsSchema(db);
     }
 
+    if (fromVersion < 7) {
+      // Adds the append-only `study_events` history table. No event is
+      // backfilled from `topic_progress`: history starts with the next real
+      // event, existing progress rows are untouched.
+      await ensureStudyEventsSchema(db);
+    }
+
     await db.execAsync(`PRAGMA user_version = ${SCHEMA_VERSION};`);
   });
 }
@@ -122,6 +131,7 @@ export async function initializeDatabase(): Promise<SQLite.SQLiteDatabase> {
       // The settings table is created the same way, so a partially written
       // table from an interrupted first run is archived instead of kept broken.
       await ensureAppSettingsSchema(db);
+      await ensureStudyEventsSchema(db);
       await db.execAsync(`PRAGMA user_version = ${SCHEMA_VERSION};`);
     });
   } else if (currentVersion < SCHEMA_VERSION) {
@@ -137,6 +147,7 @@ export async function initializeDatabase(): Promise<SQLite.SQLiteDatabase> {
     await db.withTransactionAsync(async () => {
       await reconcileExamSchema(db);
       await ensureAppSettingsSchema(db);
+      await ensureStudyEventsSchema(db);
     });
   }
   // A newer `user_version` (a downgrade) is left untouched and only verified.
@@ -145,6 +156,7 @@ export async function initializeDatabase(): Promise<SQLite.SQLiteDatabase> {
   // before the app is allowed to read or write its local data.
   await assertExamSchemaReady(db);
   await assertAppSettingsSchemaReady(db);
+  await assertStudyEventsSchemaReady(db);
 
   return db;
 }

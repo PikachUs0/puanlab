@@ -27,8 +27,13 @@ export const DATABASE_NAME = 'puanlab.db';
  *         transaction as the version stamp and its physical columns are
  *         verified, so an existing database only advances to 6 once the table
  *         really exists.
+ * 6 -> 7: adds the append-only `study_events` table (topic study history) and
+ *         its two read indexes. It is created inside the same transaction as
+ *         the version stamp; no historical event is fabricated from
+ *         `topic_progress.last_studied_at`, so existing rows are left as they
+ *         are.
  */
-export const SCHEMA_VERSION = 6;
+export const SCHEMA_VERSION = 7;
 
 export const CREATE_USER_PROFILE_TABLE = `
 CREATE TABLE IF NOT EXISTS user_profile (
@@ -259,3 +264,63 @@ export const APP_SETTINGS_REQUIRED_COLUMNS: readonly string[] = ['key', 'value',
  * archival table (and its rows) from being overwritten.
  */
 export const APP_SETTINGS_ARCHIVE_BASE_NAME = 'app_settings_legacy_v5';
+
+/**
+ * Append-only topic study history (MVP 0.2). Each row records one event — a
+ * study session or a status change — so per-topic history can be derived
+ * without overwriting `topic_progress`. Rows are never updated or deleted by
+ * the app; `occurred_at` is the moment the event happened, `created_at` the
+ * moment it was persisted, both ISO 8601 strings.
+ */
+export const STUDY_EVENTS_TABLE_NAME = 'study_events';
+
+export const CREATE_STUDY_EVENTS_TABLE = `
+CREATE TABLE IF NOT EXISTS study_events (
+  id TEXT PRIMARY KEY NOT NULL,
+  topic_id TEXT NOT NULL,
+  event_type TEXT NOT NULL,
+  occurred_at TEXT NOT NULL,
+  previous_status TEXT,
+  new_status TEXT,
+  created_at TEXT NOT NULL
+);
+`;
+
+/**
+ * Physical columns `study_events` must contain. The v6 -> v7 step compares
+ * these against `PRAGMA table_info(...)` so the table's shape — not just
+ * `PRAGMA user_version` — decides whether the database is complete.
+ */
+export const STUDY_EVENTS_REQUIRED_COLUMNS: readonly string[] = [
+  'id',
+  'topic_id',
+  'event_type',
+  'occurred_at',
+  'previous_status',
+  'new_status',
+  'created_at',
+];
+
+/** Per-topic history reads (`WHERE topic_id = ? ORDER BY occurred_at`). */
+export const STUDY_EVENTS_TOPIC_OCCURRED_AT_INDEX_NAME =
+  'idx_study_events_topic_id_occurred_at';
+
+export const CREATE_STUDY_EVENTS_TOPIC_OCCURRED_AT_INDEX = `
+CREATE INDEX IF NOT EXISTS ${STUDY_EVENTS_TOPIC_OCCURRED_AT_INDEX_NAME}
+  ON study_events (topic_id, occurred_at);
+`;
+
+/** Cross-topic, time-ordered reads such as a weekly study summary. */
+export const STUDY_EVENTS_OCCURRED_AT_INDEX_NAME = 'idx_study_events_occurred_at';
+
+export const CREATE_STUDY_EVENTS_OCCURRED_AT_INDEX = `
+CREATE INDEX IF NOT EXISTS ${STUDY_EVENTS_OCCURRED_AT_INDEX_NAME}
+  ON study_events (occurred_at);
+`;
+
+/**
+ * Base name an incompatible `study_events` table is archived under before the
+ * correct one is created. A deterministic numeric suffix keeps any existing
+ * archival table (and its rows) from being overwritten.
+ */
+export const STUDY_EVENTS_ARCHIVE_BASE_NAME = 'study_events_legacy_v6';

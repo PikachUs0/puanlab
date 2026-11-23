@@ -483,7 +483,7 @@ describe('backup generation', () => {
       formatVersion: 1,
       exportedAt: FIXED_NOW.toISOString(),
       appVersion: '0.1.0',
-      schemaVersion: 6,
+      schemaVersion: SCHEMA_VERSION,
       curriculumVersion: 2026,
     });
     expect(Object.keys(backup).sort()).toEqual([
@@ -808,8 +808,8 @@ describe('backup restore', () => {
       now: () => FIXED_NOW,
     });
 
-    expect(SCHEMA_VERSION).toBe(6);
-    expect(adapter.userVersion()).toBe(6);
+    expect(SCHEMA_VERSION).toBe(7);
+    expect(adapter.userVersion()).toBe(7);
     expect(adapter.tables()).toEqual(expect.arrayContaining([...USER_DATA_TABLES]));
   });
 

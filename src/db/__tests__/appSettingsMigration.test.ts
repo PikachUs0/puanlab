@@ -191,8 +191,8 @@ describe('ensureAppSettingsSchema', () => {
 });
 
 describe('v5 -> v6 migration', () => {
-  it('stamps user_version = 6 only after the settings table exists', async () => {
-    expect(SCHEMA_VERSION).toBe(6);
+  it('stamps the current user_version only after the settings table exists', async () => {
+    expect(SCHEMA_VERSION).toBe(7);
 
     db.setUserVersion(5);
 

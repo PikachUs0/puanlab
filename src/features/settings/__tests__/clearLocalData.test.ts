@@ -280,13 +280,13 @@ describe('clearLocalUserData (SQLite scope)', () => {
     expect(adapter.countOf('app_settings')).toBe(0);
   });
 
-  it('6. leaves the schema version at 6', async () => {
+  it('6. leaves the schema version unchanged', async () => {
     seedAll();
 
     await clearLocalUserData(db());
 
-    expect(SCHEMA_VERSION).toBe(6);
-    expect(adapter.userVersion()).toBe(6);
+    expect(SCHEMA_VERSION).toBe(7);
+    expect(adapter.userVersion()).toBe(7);
   });
 
   it('7. keeps every required table in place', async () => {

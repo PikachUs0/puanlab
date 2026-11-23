@@ -6,12 +6,20 @@ import {
   CREATE_PRACTICE_EXAMS_INDEX,
   CREATE_PRACTICE_EXAMS_TABLE,
   CREATE_PRACTICE_EXAM_RESULTS_TABLE,
+  CREATE_STUDY_EVENTS_OCCURRED_AT_INDEX,
+  CREATE_STUDY_EVENTS_TABLE,
+  CREATE_STUDY_EVENTS_TOPIC_OCCURRED_AT_INDEX,
   PRACTICE_EXAMS_ARCHIVE_BASE_NAME,
   PRACTICE_EXAMS_INDEX_NAME,
   PRACTICE_EXAMS_REQUIRED_COLUMNS,
   PRACTICE_EXAM_RESULTS_ARCHIVE_BASE_NAME,
   PRACTICE_EXAM_RESULTS_REQUIRED_COLUMNS,
   SCHEMA_VERSION,
+  STUDY_EVENTS_ARCHIVE_BASE_NAME,
+  STUDY_EVENTS_OCCURRED_AT_INDEX_NAME,
+  STUDY_EVENTS_REQUIRED_COLUMNS,
+  STUDY_EVENTS_TABLE_NAME,
+  STUDY_EVENTS_TOPIC_OCCURRED_AT_INDEX_NAME,
 } from './schema';
 
 /**
@@ -261,5 +269,92 @@ export async function assertAppSettingsSchemaReady(db: SchemaExecutor): Promise<
   throw new Error(
     `Veritabanı şeması bozuk (beklenen sürüm ${SCHEMA_VERSION}). ` +
       `${APP_SETTINGS_TABLE_NAME} eksik kolonlar: [${missingColumns.join(', ')}].`,
+  );
+}
+
+export interface StudyEventsReconciliation {
+  /** Archival name an incompatible `study_events` was moved to, if any. */
+  archivedTable: string | null;
+  createdTable: boolean;
+  createdIndexes: boolean;
+}
+
+/**
+ * v6 -> v7 step: makes sure `study_events` and its two indexes exist.
+ * Must run inside the caller's transaction so a failure rolls the whole step
+ * back (and the version stamp with it).
+ *
+ * The decision is made from the *physical* schema, not from
+ * `PRAGMA user_version`:
+ *
+ * - complete table      -> left untouched, missing indexes added
+ * - missing table       -> created (fresh install path too)
+ * - incompatible table  -> preserved under a collision-free archival name,
+ *                          then created
+ *
+ * No row is ever deleted, fabricated or backfilled from `topic_progress`, and
+ * the database file is never recreated.
+ */
+export async function ensureStudyEventsSchema(
+  db: SchemaExecutor,
+): Promise<StudyEventsReconciliation> {
+  const reconciliation: StudyEventsReconciliation = {
+    archivedTable: null,
+    createdTable: false,
+    createdIndexes: false,
+  };
+
+  const columns = await tableColumns(db, STUDY_EVENTS_TABLE_NAME);
+  const isComplete =
+    columns !== null && hasAllColumns(columns, STUDY_EVENTS_REQUIRED_COLUMNS);
+
+  if (!isComplete) {
+    if (columns !== null) {
+      // Indexes travel with the renamed table; drop them so they can be
+      // recreated on the fresh `study_events`.
+      await db.execAsync(`DROP INDEX IF EXISTS ${STUDY_EVENTS_TOPIC_OCCURRED_AT_INDEX_NAME};`);
+      await db.execAsync(`DROP INDEX IF EXISTS ${STUDY_EVENTS_OCCURRED_AT_INDEX_NAME};`);
+
+      const archivalName = await freeArchiveName(db, STUDY_EVENTS_ARCHIVE_BASE_NAME);
+      await db.execAsync(`ALTER TABLE ${STUDY_EVENTS_TABLE_NAME} RENAME TO ${archivalName};`);
+      reconciliation.archivedTable = archivalName;
+    }
+
+    await db.execAsync(CREATE_STUDY_EVENTS_TABLE);
+    reconciliation.createdTable = true;
+  }
+
+  if (!(await objectExists(db, STUDY_EVENTS_TOPIC_OCCURRED_AT_INDEX_NAME))) {
+    await db.execAsync(CREATE_STUDY_EVENTS_TOPIC_OCCURRED_AT_INDEX);
+    reconciliation.createdIndexes = true;
+  }
+
+  if (!(await objectExists(db, STUDY_EVENTS_OCCURRED_AT_INDEX_NAME))) {
+    await db.execAsync(CREATE_STUDY_EVENTS_OCCURRED_AT_INDEX);
+    reconciliation.createdIndexes = true;
+  }
+
+  return reconciliation;
+}
+
+/**
+ * Startup guard for `study_events`, mirroring `assertAppSettingsSchemaReady`:
+ * the physical columns are verified so history can never be written against a
+ * broken schema.
+ */
+export async function assertStudyEventsSchemaReady(db: SchemaExecutor): Promise<void> {
+  const columns = await tableColumns(db, STUDY_EVENTS_TABLE_NAME);
+
+  const missingColumns = STUDY_EVENTS_REQUIRED_COLUMNS.filter(
+    (column) => !columns?.includes(column),
+  );
+
+  if (missingColumns.length === 0) {
+    return;
+  }
+
+  throw new Error(
+    `Veritabanı şeması bozuk (beklenen sürüm ${SCHEMA_VERSION}). ` +
+      `${STUDY_EVENTS_TABLE_NAME} eksik kolonlar: [${missingColumns.join(', ')}].`,
   );
 }

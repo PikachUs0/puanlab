@@ -16,6 +16,7 @@ export {
 export {
   createSqliteAppSettingsRepository,
   createSqlitePracticeExamRepository,
+  createSqliteStudyEventRepository,
   createSqliteTopicProgressRepository,
   createSqliteUserProfileRepository,
   GRADE_LEVELS,
@@ -24,6 +25,7 @@ export {
   TOPIC_STATUSES,
   type AppSettingsRepository,
   type PracticeExamRepository,
+  type StudyEventRepository,
   type TopicProgressRepository,
   type UserProfileRepository,
 } from './repositories';
