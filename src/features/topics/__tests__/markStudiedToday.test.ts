@@ -12,7 +12,7 @@ import type { TopicProgress } from '@/types';
 import {
   applyStudiedToday,
   buildStudiedEvent,
-  createStudiedTodayRunner,
+  createSingleFlightRunner,
   persistStudiedToday,
 } from '../topicProgressUpdates';
 
@@ -216,7 +216,7 @@ describe('markStudiedToday persistence', () => {
   });
 
   it('serializes rapid taps into a single studied write', async () => {
-    const runner = createStudiedTodayRunner();
+    const runner = createSingleFlightRunner();
     const current = makeProgress({ status: 'learning' });
     const progress = applyStudiedToday(TOPIC_ID, current, TIMESTAMP);
     const event = buildStudiedEvent(TOPIC_ID, TIMESTAMP, 'event-rapid');

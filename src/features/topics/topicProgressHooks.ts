@@ -14,11 +14,14 @@ import {
   applyNoteChange,
   applyStatusChange,
   applyStudiedToday,
+  buildStatusChangedEvent,
   buildStudiedEvent,
-  createStudiedTodayRunner,
+  createSingleFlightRunner,
   currentIsoTimestamp,
+  persistStatusChange,
   persistStudiedToday,
-  type StudiedTodayRunner,
+  resolvePreviousStatus,
+  type SingleFlightRunner,
 } from './topicProgressUpdates';
 
 /**
@@ -64,10 +67,15 @@ export function useTopicProgressActions(topicId: string): TopicProgressActions {
   const progressRepository = useTopicProgressRepository();
   const studyEventRepository = useStudyEventRepository();
   const pendingWrite = useRef<Promise<void>>(Promise.resolve());
-  const studiedRunner = useRef<StudiedTodayRunner | null>(null);
+  const studiedRunner = useRef<SingleFlightRunner | null>(null);
+  const statusRunner = useRef<SingleFlightRunner | null>(null);
 
   if (studiedRunner.current === null) {
-    studiedRunner.current = createStudiedTodayRunner();
+    studiedRunner.current = createSingleFlightRunner();
+  }
+
+  if (statusRunner.current === null) {
+    statusRunner.current = createSingleFlightRunner();
   }
 
   /** Appends a write to the serialized queue and returns the queued run. */
@@ -137,11 +145,64 @@ export function useTopicProgressActions(topicId: string): TopicProgressActions {
       .catch(() => undefined);
   }, [database, enqueueWrite, progressRepository, studyEventRepository, topicId]);
 
+  /**
+   * Status selection: one timestamp feeds the progress row and one
+   * `status_changed` event, committed in the same transaction. Selecting the
+   * saved status is a no-op — no write, no event. `lastStudiedAt` is untouched
+   * and the store updates only after the transaction succeeds.
+   */
+  const setStatus = useCallback(
+    (status: TopicStatus) => {
+      const runner = statusRunner.current;
+
+      if (runner === null) {
+        return;
+      }
+
+      const store = useTopicStore.getState();
+      const current = store.progressByTopicId[topicId] ?? null;
+      const previousStatus = resolvePreviousStatus(current, status);
+
+      if (previousStatus === null) {
+        return;
+      }
+
+      const timestamp = currentIsoTimestamp();
+      const progress = applyStatusChange(topicId, current, status, timestamp);
+      const event = buildStatusChangedEvent(
+        topicId,
+        timestamp,
+        previousStatus,
+        status,
+        Crypto.randomUUID(),
+      );
+
+      if (database === null || progressRepository === null || studyEventRepository === null) {
+        // No persistent connection yet: keep the session usable in memory only.
+        store.setProgress(progress);
+        return;
+      }
+
+      void runner
+        .run(() =>
+          enqueueWrite(() =>
+            persistStatusChange(database, progressRepository, studyEventRepository, progress, event),
+          ),
+        )
+        .then((executed) => {
+          // Only after the transaction committed may the UI see the new row.
+          if (executed) {
+            useTopicStore.getState().setProgress(progress);
+          }
+        })
+        // Calm failure: the previous status stays in place and no event exists.
+        .catch(() => undefined);
+    },
+    [database, enqueueWrite, progressRepository, studyEventRepository, topicId],
+  );
+
   return {
-    setStatus: useCallback(
-      (status: TopicStatus) => commit((current) => applyStatusChange(topicId, current, status)),
-      [commit, topicId],
-    ),
+    setStatus,
     setNote: useCallback(
       (note: string | null) => commit((current) => applyNoteChange(topicId, current, note)),
       [commit, topicId],
