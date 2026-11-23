@@ -38,6 +38,12 @@ type ThemeControls = {
    * follows the device theme again and no replacement row is created.
    */
   resetThemePreference: () => void;
+  /**
+   * Applies a preference to the in-memory state without writing to the
+   * database. Used after a backup restore has already written the restored
+   * theme row inside its own transaction.
+   */
+  applyThemePreference: (preference: ThemePreference) => void;
 };
 
 type ThemeContextValue = ThemeControls & {
@@ -172,6 +178,15 @@ export function ThemeProvider({ children, repository }: ThemeProviderProps) {
     selection.hydrate('system');
   }, [selection]);
 
+  const applyThemePreference = useCallback(
+    (preference: ThemePreference) => {
+      // Seeds the confirmed and visible preference without issuing a write; the
+      // restored row already exists in the database.
+      selection.hydrate(preference);
+    },
+    [selection],
+  );
+
   const { visible } = selectionState;
   const resolvedScheme = resolveColorScheme(visible, systemScheme);
 
@@ -184,8 +199,16 @@ export function ThemeProvider({ children, repository }: ThemeProviderProps) {
       isHydrated,
       setThemePreference,
       resetThemePreference,
+      applyThemePreference,
     }),
-    [resolvedScheme, visible, isHydrated, setThemePreference, resetThemePreference],
+    [
+      resolvedScheme,
+      visible,
+      isHydrated,
+      setThemePreference,
+      resetThemePreference,
+      applyThemePreference,
+    ],
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
@@ -206,8 +229,23 @@ export function useTheme(): Theme {
 }
 
 export function useThemeControls(): ThemeControls {
-  const { preference, resolvedScheme, isDark, isHydrated, setThemePreference, resetThemePreference } =
-    useThemeContext();
+  const {
+    preference,
+    resolvedScheme,
+    isDark,
+    isHydrated,
+    setThemePreference,
+    resetThemePreference,
+    applyThemePreference,
+  } = useThemeContext();
 
-  return { preference, resolvedScheme, isDark, isHydrated, setThemePreference, resetThemePreference };
+  return {
+    preference,
+    resolvedScheme,
+    isDark,
+    isHydrated,
+    setThemePreference,
+    resetThemePreference,
+    applyThemePreference,
+  };
 }

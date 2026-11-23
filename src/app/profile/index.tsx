@@ -29,7 +29,13 @@ import {
   toProfileDraft,
   type ProfileDraft,
 } from '@/features/profile';
-import { useClearLocalData } from '@/features/settings';
+import {
+  EXPORT_BACKUP_PROGRESS_MESSAGE,
+  RESTORE_BACKUP_PROGRESS_MESSAGE,
+  useClearLocalData,
+  useExportBackup,
+  useRestoreBackup,
+} from '@/features/settings';
 import { profileSelectors, useProfileStore } from '@/store';
 import { spacing, typography, useTheme, useThemeControls } from '@/theme';
 import type { ThemePreference, UserProfile } from '@/types';
@@ -74,6 +80,21 @@ const CLEAR_LOCAL_DATA_SUPPORTING_TEXT =
   'Konu ilerlemelerin, notların, denemelerin ve profil bilgilerin bu cihazdan silinir.';
 const CLEAR_LOCAL_DATA_A11Y_LABEL = 'Tüm yerel kullanıcı verilerini temizle';
 const CLEAR_LOCAL_DATA_A11Y_HINT = 'İşlemden önce iki aşamalı onay istenir';
+
+const BACKUP_EXPORT_LABEL = 'Verileri Yedekle';
+const BACKUP_EXPORT_SUPPORTING_TEXT =
+  'Profilini, konu ilerlemelerini ve denemelerini bir JSON dosyası olarak kaydet.';
+const BACKUP_EXPORT_A11Y_LABEL = 'Verileri yedekle';
+const BACKUP_EXPORT_A11Y_HINT = 'Yedeği JSON dosyası olarak paylaşır';
+
+const BACKUP_IMPORT_LABEL = 'Yedekten Geri Yükle';
+const BACKUP_IMPORT_SUPPORTING_TEXT =
+  'Daha önce oluşturduğun PuanLab yedeğini bu cihaza geri yükle.';
+const BACKUP_IMPORT_A11Y_LABEL = 'Yedekten geri yükle';
+const BACKUP_IMPORT_A11Y_HINT = 'Mevcut verileri yedekteki verilerle değiştirir';
+
+const BACKUP_PRIVACY_NOTE =
+  'Yedek dosyası kişisel çalışma verilerini içerir. Dosyayı güvenli bir yerde sakla.';
 
 const CLEAR_CONFIRM_TITLE = 'Tüm yerel veriler silinsin mi?';
 const CLEAR_CONFIRM_MESSAGE =
@@ -143,6 +164,22 @@ export default function ProfileScreen() {
   const repository = useUserProfileRepository();
   const hydrateProfile = useProfileStore((state) => state.hydrateProfile);
   const { isClearing, error: clearError, clearLocalData } = useClearLocalData();
+  const {
+    isExporting,
+    error: exportError,
+    successMessage: exportSuccess,
+    exportBackup,
+  } = useExportBackup();
+  const {
+    isRestoring,
+    error: restoreError,
+    successMessage: restoreSuccess,
+    restoreFromBackup,
+  } = useRestoreBackup();
+
+  // Export and import share one guard, so neither may run while the other is
+  // in flight (or while the reset is deleting the rows they would read).
+  const isBackupBusy = isExporting || isRestoring;
 
   // The displayed (read-only) profile values are read from the store through
   // stable selectors; every selector returns a primitive or `string | null`.
@@ -261,8 +298,9 @@ export default function ProfileScreen() {
   }, [goBack]);
 
   const handleBack = useCallback(() => {
-    // Leaving the screen mid-reset would let a screen read half-cleared values.
-    if (isClearing) {
+    // Leaving the screen mid-reset or mid-backup would let a screen read
+    // half-replaced values.
+    if (isClearing || isBackupBusy) {
       return;
     }
 
@@ -272,17 +310,17 @@ export default function ProfileScreen() {
     }
 
     goBack();
-  }, [isClearing, isDirty, confirmDiscard, goBack]);
+  }, [isClearing, isBackupBusy, isDirty, confirmDiscard, goBack]);
 
   // Android hardware back must follow the same rule as the header button, and
-  // must not escape the screen while the reset transaction is running.
+  // must not escape the screen while the reset or a backup is running.
   useEffect(() => {
-    if (!isDirty && !isClearing) {
+    if (!isDirty && !isClearing && !isBackupBusy) {
       return;
     }
 
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (isClearing) {
+      if (isClearing || isBackupBusy) {
         return true;
       }
 
@@ -291,7 +329,7 @@ export default function ProfileScreen() {
     });
 
     return () => subscription.remove();
-  }, [isDirty, isClearing, confirmDiscard]);
+  }, [isDirty, isClearing, isBackupBusy, confirmDiscard]);
 
   const handleChangeDraft = useCallback((patch: Partial<ProfileDraft>) => {
     setDraft((current) => (current === null ? current : { ...current, ...patch }));
@@ -302,7 +340,13 @@ export default function ProfileScreen() {
     // Single-flight guard: a fast double tap can never start two writes. A
     // reset in flight also blocks a profile write, which would recreate a row
     // the reset just deleted.
-    if (savingRef.current || isClearing || savedProfile === null || draft === null) {
+    if (
+      savingRef.current ||
+      isClearing ||
+      isBackupBusy ||
+      savedProfile === null ||
+      draft === null
+    ) {
       return;
     }
 
@@ -345,16 +389,16 @@ export default function ProfileScreen() {
         setIsSaving(false);
       }
     }
-  }, [repository, savedProfile, draft, hydrateProfile, isClearing]);
+  }, [repository, savedProfile, draft, hydrateProfile, isClearing, isBackupBusy]);
 
   // Applies the theme immediately and persists it. Writes are serialised inside
   // the theme state machine, so rapid taps cannot produce inconsistent writes;
   // a failure restores the previously confirmed preference and is surfaced here.
   const handleSelectTheme = useCallback(
     async (value: ThemePreference) => {
-      // A theme write during the reset would recreate the settings row the
-      // reset just deleted.
-      if (isClearing || value === preference) {
+      // A theme write during the reset or a backup would recreate the settings
+      // row the reset deleted, or override the restored preference.
+      if (isClearing || isBackupBusy || value === preference) {
         return;
       }
 
@@ -369,7 +413,7 @@ export default function ProfileScreen() {
         }
       }
     },
-    [isClearing, preference, setThemePreference],
+    [isClearing, isBackupBusy, preference, setThemePreference],
   );
 
   const closeConfirmFlow = useCallback(() => {
@@ -382,7 +426,7 @@ export default function ProfileScreen() {
    * dialog. Closing either dialog leaves every value unchanged.
    */
   const handleClearLocalData = useCallback(() => {
-    if (isClearing || confirmStageRef.current !== 'idle') {
+    if (isClearing || isBackupBusy || confirmStageRef.current !== 'idle') {
       return;
     }
 
@@ -434,15 +478,46 @@ export default function ProfileScreen() {
         },
       },
     );
-  }, [isClearing, clearLocalData, closeConfirmFlow]);
+  }, [isClearing, isBackupBusy, clearLocalData, closeConfirmFlow]);
+
+  /**
+   * The restore replaces the profile row, so the editable draft is re-read
+   * from SQLite afterwards instead of keeping the pre-restore values.
+   */
+  const handleRestoreBackup = useCallback(async () => {
+    const didRestore = await restoreFromBackup();
+
+    if (!didRestore || repository === null || !isMountedRef.current) {
+      return;
+    }
+
+    try {
+      const profile = await repository.getProfile();
+
+      // A backup without a profile sends the app back to onboarding, so the
+      // screen must not keep editing the values it displayed before.
+      if (!isMountedRef.current || profile === null) {
+        return;
+      }
+
+      setSavedProfile(profile);
+      setDraft(toProfileDraft(profile));
+      setFeedback(null);
+    } catch (error) {
+      if (__DEV__) {
+        console.warn('[Profile] Profile could not be reloaded after restore', error);
+      }
+    }
+  }, [restoreFromBackup, repository]);
 
   // Empty optional targets are shown as "Belirtilmedi".
   const optionalTargetPlaceholder = formatOptionalTarget('');
 
-  // A profile write and the reset must never run at the same time, so each
-  // action disables the other while it is in flight.
-  const isSaveDisabled = isSaving || isClearing;
-  const isClearDisabled = isClearing || isSaving;
+  // A profile write, the reset and the backup actions must never run at the
+  // same time, so each action disables the others while it is in flight.
+  const isSaveDisabled = isSaving || isClearing || isBackupBusy;
+  const isClearDisabled = isClearing || isSaving || isBackupBusy;
+  const isBackupActionDisabled = isClearing || isSaving || isBackupBusy;
 
   return (
     <Screen>
@@ -644,7 +719,7 @@ export default function ProfileScreen() {
                   label={option.label}
                   icon={option.icon}
                   selected={preference === option.value}
-                  disabled={isClearing}
+                  disabled={isClearing || isBackupBusy}
                   onPress={() => handleSelectTheme(option.value)}
                 />
               ))}
@@ -669,6 +744,112 @@ export default function ProfileScreen() {
             </AppText>
             <AppText variant="body" color="secondary">
               {PRIVACY_DELETE_MESSAGE}
+            </AppText>
+
+            {/* Backup and restore: icon and label together, never colour
+                alone, each target at least 48dp tall. */}
+            <View style={styles.backupItem}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={BACKUP_EXPORT_A11Y_LABEL}
+                accessibilityHint={BACKUP_EXPORT_A11Y_HINT}
+                accessibilityState={{ disabled: isBackupActionDisabled, busy: isExporting }}
+                disabled={isBackupActionDisabled}
+                onPress={() => {
+                  void exportBackup();
+                }}
+                style={({ pressed }) => [
+                  styles.dataButton,
+                  {
+                    borderColor: colors.border,
+                    opacity: isBackupActionDisabled ? 0.6 : 1,
+                  },
+                  pressed && !isBackupActionDisabled && styles.pressed,
+                ]}
+              >
+                <Ionicons name="download-outline" size={20} color={colors.primary} />
+                <AppText variant="body" style={[styles.dataLabel, { color: colors.primary }]}>
+                  {isExporting ? EXPORT_BACKUP_PROGRESS_MESSAGE : BACKUP_EXPORT_LABEL}
+                </AppText>
+              </Pressable>
+
+              <AppText variant="caption" color="secondary">
+                {BACKUP_EXPORT_SUPPORTING_TEXT}
+              </AppText>
+
+              {exportError ? (
+                <AppText
+                  variant="caption"
+                  accessibilityLiveRegion="polite"
+                  style={[styles.feedback, { color: colors.danger }]}
+                >
+                  {exportError}
+                </AppText>
+              ) : null}
+
+              {exportSuccess ? (
+                <AppText
+                  variant="caption"
+                  accessibilityLiveRegion="polite"
+                  style={[styles.feedback, { color: colors.primary }]}
+                >
+                  {exportSuccess}
+                </AppText>
+              ) : null}
+            </View>
+
+            <View style={styles.backupItem}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={BACKUP_IMPORT_A11Y_LABEL}
+                accessibilityHint={BACKUP_IMPORT_A11Y_HINT}
+                accessibilityState={{ disabled: isBackupActionDisabled, busy: isRestoring }}
+                disabled={isBackupActionDisabled}
+                onPress={() => {
+                  void handleRestoreBackup();
+                }}
+                style={({ pressed }) => [
+                  styles.dataButton,
+                  {
+                    borderColor: colors.border,
+                    opacity: isBackupActionDisabled ? 0.6 : 1,
+                  },
+                  pressed && !isBackupActionDisabled && styles.pressed,
+                ]}
+              >
+                <Ionicons name="cloud-upload-outline" size={20} color={colors.primary} />
+                <AppText variant="body" style={[styles.dataLabel, { color: colors.primary }]}>
+                  {isRestoring ? RESTORE_BACKUP_PROGRESS_MESSAGE : BACKUP_IMPORT_LABEL}
+                </AppText>
+              </Pressable>
+
+              <AppText variant="caption" color="secondary">
+                {BACKUP_IMPORT_SUPPORTING_TEXT}
+              </AppText>
+
+              {restoreError ? (
+                <AppText
+                  variant="caption"
+                  accessibilityLiveRegion="polite"
+                  style={[styles.feedback, { color: colors.danger }]}
+                >
+                  {restoreError}
+                </AppText>
+              ) : null}
+
+              {restoreSuccess ? (
+                <AppText
+                  variant="caption"
+                  accessibilityLiveRegion="polite"
+                  style={[styles.feedback, { color: colors.primary }]}
+                >
+                  {restoreSuccess}
+                </AppText>
+              ) : null}
+            </View>
+
+            <AppText variant="caption" color="secondary">
+              {BACKUP_PRIVACY_NOTE}
             </AppText>
 
             <AppText variant="body" color="secondary">
@@ -1005,6 +1186,23 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   dangerLabel: {
+    fontWeight: typography.subtitle.fontWeight,
+  },
+  backupItem: {
+    gap: spacing.xs,
+  },
+  dataButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    minHeight: spacing.xxl,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  dataLabel: {
+    flexShrink: 1,
     fontWeight: typography.subtitle.fontWeight,
   },
   feedback: {

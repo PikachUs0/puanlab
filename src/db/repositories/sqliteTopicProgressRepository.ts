@@ -12,7 +12,7 @@ type TopicProgressRow = {
   updated_at: string;
 };
 
-const TOPIC_STATUSES: readonly TopicStatus[] = [
+export const TOPIC_STATUSES: readonly TopicStatus[] = [
   'not_started',
   'learning',
   'practice',

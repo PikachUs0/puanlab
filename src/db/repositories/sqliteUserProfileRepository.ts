@@ -17,8 +17,8 @@ type UserProfileRow = {
   updated_at: string;
 };
 
-const GRADE_LEVELS: readonly GradeLevel[] = ['grade_11', 'grade_12', 'graduate'];
-const SCORE_TYPES: readonly ScoreType[] = ['SAY', 'EA', 'SOZ', 'DIL'];
+export const GRADE_LEVELS: readonly GradeLevel[] = ['grade_11', 'grade_12', 'graduate'];
+export const SCORE_TYPES: readonly ScoreType[] = ['SAY', 'EA', 'SOZ', 'DIL'];
 
 const SELECT_COLUMNS =
   'grade_level, score_type, target_department, target_university, onboarding_completed, created_at, updated_at';
