@@ -13,5 +13,9 @@ export {
   applyNoteChange,
   applyStatusChange,
   applyStudiedToday,
+  buildStudiedEvent,
+  createStudiedTodayRunner,
   currentIsoTimestamp,
+  persistStudiedToday,
+  type StudiedTodayRunner,
 } from './topicProgressUpdates';

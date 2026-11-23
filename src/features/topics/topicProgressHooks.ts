@@ -1,11 +1,25 @@
+import * as Crypto from 'expo-crypto';
 import { useCallback, useMemo, useRef } from 'react';
 
-import { createSqliteTopicProgressRepository, useDatabase } from '@/db';
-import type { TopicProgressRepository } from '@/db';
+import {
+  createSqliteStudyEventRepository,
+  createSqliteTopicProgressRepository,
+  useDatabase,
+} from '@/db';
+import type { StudyEventRepository, TopicProgressRepository } from '@/db';
 import { useTopicStore } from '@/store';
 import type { TopicProgress, TopicStatus } from '@/types';
 
-import { applyNoteChange, applyStatusChange, applyStudiedToday } from './topicProgressUpdates';
+import {
+  applyNoteChange,
+  applyStatusChange,
+  applyStudiedToday,
+  buildStudiedEvent,
+  createStudiedTodayRunner,
+  currentIsoTimestamp,
+  persistStudiedToday,
+  type StudiedTodayRunner,
+} from './topicProgressUpdates';
 
 /**
  * Builds the repository for the active connection. Returns null while the
@@ -17,6 +31,16 @@ export function useTopicProgressRepository(): TopicProgressRepository | null {
 
   return useMemo(
     () => (isReady && database && !error ? createSqliteTopicProgressRepository(database) : null),
+    [database, isReady, error],
+  );
+}
+
+/** Study-event repository bound to the same single connection. */
+function useStudyEventRepository(): StudyEventRepository | null {
+  const { database, isReady, error } = useDatabase();
+
+  return useMemo(
+    () => (isReady && database && !error ? createSqliteStudyEventRepository(database) : null),
     [database, isReady, error],
   );
 }
@@ -36,8 +60,22 @@ export type TopicProgressActions = {
  * that is already queued still completes if the sheet unmounts.
  */
 export function useTopicProgressActions(topicId: string): TopicProgressActions {
-  const repository = useTopicProgressRepository();
+  const { database } = useDatabase();
+  const progressRepository = useTopicProgressRepository();
+  const studyEventRepository = useStudyEventRepository();
   const pendingWrite = useRef<Promise<void>>(Promise.resolve());
+  const studiedRunner = useRef<StudiedTodayRunner | null>(null);
+
+  if (studiedRunner.current === null) {
+    studiedRunner.current = createStudiedTodayRunner();
+  }
+
+  /** Appends a write to the serialized queue and returns the queued run. */
+  const enqueueWrite = useCallback((write: () => Promise<void>): Promise<void> => {
+    const run = pendingWrite.current.then(write);
+    pendingWrite.current = run.catch(() => undefined);
+    return run;
+  }, []);
 
   const commit = useCallback(
     (build: (current: TopicProgress | null) => TopicProgress) => {
@@ -47,18 +85,57 @@ export function useTopicProgressActions(topicId: string): TopicProgressActions {
 
       store.setProgress(next);
 
-      if (repository === null) {
+      if (progressRepository === null) {
         return;
       }
 
-      const write = pendingWrite.current.then(() => repository.upsert(next));
-
       // Swallow write failures: the session keeps working from the in-memory
       // store instead of surfacing a crash, and the next write retries the row.
-      pendingWrite.current = write.catch(() => undefined);
+      void enqueueWrite(() => progressRepository.upsert(next)).catch(() => undefined);
     },
-    [repository, topicId],
+    [enqueueWrite, progressRepository, topicId],
   );
+
+  /**
+   * "Bugün Çalıştım": one timestamp feeds the progress row and one `studied`
+   * event, both committed in the same transaction. The store is updated only
+   * after that transaction succeeds, so a failed write leaves the previous
+   * progress (and the UI) untouched.
+   */
+  const markStudiedToday = useCallback(() => {
+    const runner = studiedRunner.current;
+
+    if (runner === null) {
+      return;
+    }
+
+    const store = useTopicStore.getState();
+    const current = store.progressByTopicId[topicId] ?? null;
+    const timestamp = currentIsoTimestamp();
+    const progress = applyStudiedToday(topicId, current, timestamp);
+    const event = buildStudiedEvent(topicId, timestamp, Crypto.randomUUID());
+
+    if (database === null || progressRepository === null || studyEventRepository === null) {
+      // No persistent connection yet: keep the session usable in memory only.
+      store.setProgress(progress);
+      return;
+    }
+
+    void runner
+      .run(() =>
+        enqueueWrite(() =>
+          persistStudiedToday(database, progressRepository, studyEventRepository, progress, event),
+        ),
+      )
+      .then((executed) => {
+        // Only after the transaction committed may the UI see the new row.
+        if (executed) {
+          useTopicStore.getState().setProgress(progress);
+        }
+      })
+      // Calm failure: the previous progress stays in place and no event exists.
+      .catch(() => undefined);
+  }, [database, enqueueWrite, progressRepository, studyEventRepository, topicId]);
 
   return {
     setStatus: useCallback(
@@ -69,9 +146,6 @@ export function useTopicProgressActions(topicId: string): TopicProgressActions {
       (note: string | null) => commit((current) => applyNoteChange(topicId, current, note)),
       [commit, topicId],
     ),
-    markStudiedToday: useCallback(
-      () => commit((current) => applyStudiedToday(topicId, current)),
-      [commit, topicId],
-    ),
+    markStudiedToday,
   };
 }
